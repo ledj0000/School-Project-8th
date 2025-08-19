@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pong Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background-color: #1a1a1a;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 50px;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    h1 {
+      color: #d8b3ff;
+      margin-bottom: 20px;
+      font-size: 2.5em;
+    }
+    canvas {
+      border: 2px solid #8a2be2;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+      background-color: #2a2a2a;
+    }
+    .score {
+      color: #d8b3ff;
+      font-size: 1.5em;
+      margin-top: 10px;
+    }
+    .back-button, .mode-button {
+      display: inline-block;
+      margin: 10px;
+      padding: 15px 30px;
+      font-size: 1.2em;
+      color: #fff;
+      background-color: #8a2be2;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: 0.3s;
+      box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+    }
+    .back-button:hover, .mode-button:hover {
+      background-color: #b266ff;
+      box-shadow: 0 0 25px rgba(178, 102, 255, 0.8);
+    }
+    .instructions {
+      color: #d8b3ff;
+      font-size: 1.2em;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pong Game</h1>
+  <canvas id="gameCanvas" width="600" height="400"></canvas>
+  <div class="score">Player 1: <span id="player1Score">0</span> | Player 2: <span id="player2Score">0</span></div>
+  <div class="instructions" id="instructions">Player 1: W/S to move | Player 2: Up/Down Arrows to move</div>
+  <button class="mode-button" onclick="toggleMode()">Switch to AI Mode</button>
+  <a class="back-button" href="index.html">Back to Main Page</a>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const paddleWidth = 10;
+    const paddleHeight = 60;
+    const ballSize = 10;
+    let paddle1Y = canvas.height / 2 - paddleHeight / 2;
+    let paddle2Y = canvas.height / 2 - paddleHeight / 2;
+    let ballX = canvas.width / 2;
+    let ballY = canvas.height / 2;
+    let ballDX = 4;
+    let ballDY = 4;
+    let player1Score = 0;
+    let player2Score = 0;
+    let paddle1DY = 0;
+    let paddle2DY = 0;
+    let gameLoop = null;
+    let isAIMode = false;
+
+    function drawGame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#8a2be2';
+      ctx.fillRect(10, paddle1Y, paddleWidth, paddleHeight);
+      ctx.fillRect(canvas.width - paddleWidth - 10, paddle2Y, paddleWidth, paddleHeight);
+      ctx.fillStyle = '#d8b3ff';
+      ctx.beginPath();
+      ctx.arc(ballX, ballY, ballSize / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#d8b3ff';
+      ctx.fillRect(canvas.width / 2 - 1, 0, 2, canvas.height);
+      document.getElementById('player1Score').textContent = player1Score;
+      document.getElementById('player2Score').textContent = player2Score;
+    }
+
+    function moveBall() {
+      ballX += ballDX;
+      ballY += ballDY;
+      if (ballY <= 0 || ballY >= canvas.height) {
+        ballDY = -ballDY;
+      }
+      if (
+        (ballX <= 20 + paddleWidth && ballY >= paddle1Y && ballY <= paddle1Y + paddleHeight) ||
+        (ballX >= canvas.width - 20 - paddleWidth && ballY >= paddle2Y && ballY <= paddle2Y + paddleHeight)
+      ) {
+        ballDX = -ballDX;
+      }
+      if (ballX < 0) {
+        player2Score++;
+        resetBall();
+      } else if (ballX > canvas.width) {
+        player1Score++;
+        resetBall();
+      }
+    }
+
+    function movePaddles() {
+      paddle1Y = Math.max(0, Math.min(canvas.height - paddleHeight, paddle1Y + paddle1DY));
+      if (isAIMode) {
+        const aiSpeed = 3;
+        const targetY = ballY - paddleHeight / 2;
+        if (paddle2Y + paddleHeight / 2 < ballY) {
+          paddle2Y = Math.min(paddle2Y + aiSpeed, canvas.height - paddleHeight);
+        } else if (paddle2Y + paddleHeight / 2 > ballY) {
+          paddle2Y = Math.max(paddle2Y - aiSpeed, 0);
+        }
+      } else {
+        paddle2Y = Math.max(0, Math.min(canvas.height - paddleHeight, paddle2Y + paddle2DY));
+      }
+    }
+
+    function resetBall() {
+      ballX = canvas.width / 2;
+      ballY = canvas.height / 2;
+      ballDX = Math.sign(ballDX) * 4;
+      ballDY = (Math.random() * 8 - 4);
+    }
+
+    function toggleMode() {
+      isAIMode = !isAIMode;
+      document.getElementById('instructions').textContent = isAIMode
+        ? 'Player 1: W/S to move | AI controls right paddle'
+        : 'Player 1: W/S to move | Player 2: Up/Down Arrows to move';
+      document.querySelector('.mode-button').textContent = isAIMode ? 'Switch to Two-Player Mode' : 'Switch to AI Mode';
+      player1Score = 0;
+      player2Score = 0;
+      paddle1Y = canvas.height / 2 - paddleHeight / 2;
+      paddle2Y = canvas.height / 2 - paddleHeight / 2;
+      resetBall();
+      drawGame();
+    }
+
+    document.addEventListener('keydown', e => {
+      switch (e.key.toLowerCase()) {
+        case 'w':
+          paddle1DY = -5;
+          break;
+        case 's':
+          paddle1DY = 5;
+          break;
+        case 'arrowup':
+          if (!isAIMode) paddle2DY = -5;
+          break;
+        case 'arrowdown':
+          if (!isAIMode) paddle2DY = 5;
+          break;
+      }
+      if (!gameLoop && (paddle1DY !== 0 || (!isAIMode && paddle2DY !== 0))) {
+        startGame();
+      }
+    });
+
+    document.addEventListener('keyup', e => {
+      switch (e.key.toLowerCase()) {
+        case 'w':
+        case 's':
+          paddle1DY = 0;
+          break;
+        case 'arrowup':
+        case 'arrowdown':
+          if (!isAIMode) paddle2DY = 0;
+          break;
+      }
+    });
+
+    function startGame() {
+      if (!gameLoop) {
+        gameLoop = setInterval(() => {
+          moveBall();
+          movePaddles();
+          drawGame();
+        }, 1000 / 60);
+      }
+    }
+
+    drawGame();
+  </script>
+</body>
+</html>
