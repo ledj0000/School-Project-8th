@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Proxy Page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background-color: #1a1a1a;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 50px;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    h1 {
+      color: #d8b3ff;
+      margin-bottom: 20px;
+      font-size: 2.5em;
+    }
+    .input-container {
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      padding: 10px;
+      font-size: 1.2em;
+      width: 300px;
+      border: 2px solid #8a2be2;
+      border-radius: 10px;
+      background-color: #2a2a2a;
+      color: #fff;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1.2em;
+      color: #fff;
+      background-color: #8a2be2;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: 0.3s;
+      box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+    }
+    button:hover {
+      background-color: #b266ff;
+      box-shadow: 0 0 25px rgba(178, 102, 255, 0.8);
+    }
+    .back-button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 15px 30px;
+      font-size: 1.2em;
+      color: #fff;
+      background-color: #8a2be2;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: 0.3s;
+      box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+    }
+    .back-button:hover {
+      background-color: #b266ff;
+      box-shadow: 0 0 25px rgba(178, 102, 255, 0.8);
+    }
+    #content {
+      margin-top: 20px;
+      color: #d8b3ff;
+      font-size: 1.2em;
+      max-width: 600px;
+      word-wrap: break-word;
+    }
+    .instructions {
+      color: #d8b3ff;
+      font-size: 1.2em;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Proxy Page</h1>
+  <div class="instructions">Enter a URL to fetch its content (CORS-enabled sites only)</div>
+  <div class="input-container">
+    <input type="text" id="urlInput" placeholder="Enter URL (e.g., https://api.example.com)">
+    <button onclick="fetchContent()">Fetch</button>
+  </div>
+  <div id="content">Content will appear here...</div>
+  <a class="back-button" href="index.html">Back to Main Page</a>
+  <script>
+    async function fetchContent() {
+      const url = document.getElementById('urlInput').value;
+      const contentDiv = document.getElementById('content');
+      if (!url) {
+        contentDiv.textContent = 'Please enter a valid URL.';
+        return;
+      }
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          contentDiv.textContent = JSON.stringify(data, null, 2);
+        } else {
+          const text = await response.text();
+          contentDiv.textContent = text;
+        }
+      } catch (error) {
+        contentDiv.textContent = `Error: ${error.message} (This site may not allow CORS or may be blocked.)`;
+      }
+    }
+  </script>
+</body>
+</html>
