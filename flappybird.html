@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Flappy Bird Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background-color: #1a1a1a;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 50px;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    h1 {
+      color: #d8b3ff;
+      margin-bottom: 20px;
+      font-size: 2.5em;
+    }
+    canvas {
+      border: 2px solid #8a2be2;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+      background-color: #2a2a2a;
+    }
+    .score {
+      color: #d8b3ff;
+      font-size: 1.5em;
+      margin-top: 10px;
+    }
+    .back-button, .mode-button {
+      display: inline-block;
+      margin: 10px;
+      padding: 15px 30px;
+      font-size: 1.2em;
+      color: #fff;
+      background-color: #8a2be2;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: 0.3s;
+      box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+    }
+    .back-button:hover, .mode-button:hover {
+      background-color: #b266ff;
+      box-shadow: 0 0 25px rgba(178, 102, 255, 0.8);
+    }
+    .instructions {
+      color: #d8b3ff;
+      font-size: 1.2em;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Flappy Bird Game</h1>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <div class="score">Player 1 Score: <span id="player1Score">0</span> | Player 2/AI Score: <span id="player2Score">0</span></div>
+  <div class="instructions" id="instructions">Player 1: Spacebar to jump | Player 2: Up Arrow to jump | Press to start</div>
+  <button class="mode-button" onclick="toggleMode()">Switch to AI Mode</button>
+  <a class="back-button" href="index.html">Back to Main Page</a>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const birdWidth = 30;
+    const birdHeight = 20;
+    let bird1Y = canvas.height / 2;
+    let bird2Y = canvas.height / 2;
+    let bird1Velocity = 0;
+    let bird2Velocity = 0;
+    const gravity = 0.5;
+    const jump = -8;
+    const pipeWidth = 50;
+    const pipeGap = 150;
+    let pipes = [];
+    let player1Score = 0;
+    let player2Score = 0;
+    let isGameOver = false;
+    let isAIMode = false;
+    let gameStarted = false;
+
+    function drawGame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Draw pipes
+      ctx.fillStyle = '#8a2be2';
+      pipes.forEach(pipe => {
+        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+        ctx.fillRect(pipe.x, pipe.top + pipeGap, pipeWidth, canvas.height - pipe.top - pipeGap);
+      });
+      // Draw birds
+      ctx.fillStyle = '#d8b3ff';
+      ctx.fillRect(50, bird1Y, birdWidth, birdHeight);
+      if (isAIMode || gameStarted) {
+        ctx.fillStyle = '#b266ff';
+        ctx.fillRect(80, bird2Y, birdWidth, birdHeight);
+      }
+      // Update scores
+      document.getElementById('player1Score').textContent = player1Score;
+      document.getElementById('player2Score').textContent = player2Score;
+    }
+
+    function updateGame() {
+      if (!gameStarted || isGameOver) return;
+      // Move pipes
+      pipes.forEach(pipe => {
+        pipe.x -= 2;
+        if (pipe.x + pipeWidth < 0) {
+          pipes.shift();
+          pipes.push({
+            x: canvas.width,
+            top: Math.random() * (canvas.height - pipeGap - 100) + 50
+          });
+          if (!isGameOver) {
+            player1Score++;
+            if (isAIMode || bird2Y !== canvas.height / 2) player2Score++;
+          }
+        }
+      });
+      // Move bird 1
+      bird1Velocity += gravity;
+      bird1Y += bird1Velocity;
+      // Move bird 2
+      if (isAIMode) {
+        const targetY = pipes[0].top + pipeGap / 2 - birdHeight / 2;
+        if (bird2Y < targetY) bird2Velocity = Math.min(bird2Velocity + 0.3, 3);
+        else if (bird2Y > targetY) bird2Velocity = Math.max(bird2Velocity - 0.3, -3);
+        bird2Y += bird2Velocity;
+      } else {
+        bird2Velocity += gravity;
+        bird2Y += bird2Velocity;
+      }
+      // Collision detection
+      pipes.forEach(pipe => {
+        if (
+          (50 + birdWidth > pipe.x && 50 < pipe.x + pipeWidth &&
+           (bird1Y < pipe.top || bird1Y + birdHeight > pipe.top + pipeGap)) ||
+          bird1Y <= 0 || bird1Y + birdHeight >= canvas.height
+        ) {
+          isGameOver = true;
+        }
+        if (
+          (isAIMode || bird2Y !== canvas.height / 2) &&
+          (80 + birdWidth > pipe.x && 80 < pipe.x + pipeWidth &&
+           (bird2Y < pipe.top || bird2Y + birdHeight > pipe.top + pipeGap)) ||
+          bird2Y <= 0 || bird2Y + birdHeight >= canvas.height
+        ) {
+          isGameOver = true;
+        }
+      });
+      if (isGameOver) {
+        alert('Game Over! Player 1: ' + player1Score + ' | Player 2/AI: ' + player2Score + '\nClick OK to restart.');
+        resetGame();
+      }
+      drawGame();
+      requestAnimationFrame(updateGame);
+    }
+
+    function resetGame() {
+      bird1Y = canvas.height / 2;
+      bird2Y = canvas.height / 2;
+      bird1Velocity = 0;
+      bird2Velocity = 0;
+      pipes = [{ x: canvas.width, top: Math.random() * (canvas.height - pipeGap - 100) + 50 }];
+      player1Score = 0;
+      player2Score = 0;
+      isGameOver = false;
+      gameStarted = false;
+      drawGame();
+    }
+
+    function toggleMode() {
+      isAIMode = !isAIMode;
+      document.getElementById('instructions').textContent = isAIMode
+        ? 'Player 1: Spacebar to jump | AI controls second bird | Press to start'
+        : 'Player 1: Spacebar to jump | Player 2: Up Arrow to jump | Press to start';
+      document.querySelector('.mode-button').textContent = isAIMode ? 'Switch to Two-Player Mode' : 'Switch to AI Mode';
+      resetGame();
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === ' ' && !isGameOver) {
+        bird1Velocity = jump;
+        if (!gameStarted) {
+          gameStarted = true;
+          pipes = [{ x: canvas.width, top: Math.random() * (canvas.height - pipeGap - 100) + 50 }];
+          requestAnimationFrame(updateGame);
+        }
+      }
+      if (e.key === 'ArrowUp' && !isAIMode && !isGameOver) {
+        bird2Velocity = jump;
+        if (!gameStarted) {
+          gameStarted = true;
+          pipes = [{ x: canvas.width, top: Math.random() * (canvas.height - pipeGap - 100) + 50 }];
+          requestAnimationFrame(updateGame);
+        }
+      }
+    });
+
+    drawGame();
+  </script>
+</body>
+</html>
